@@ -1,0 +1,24 @@
+# 本地密钥（明文，仅本机使用）
+data/keys.json
+
+# 运行数据不入库，但保留 data/README.md
+!data/
+data/*
+!data/README.md
+
+# 日志不入库，但保留 logs/README.md
+!logs/
+logs/*
+!logs/README.md
+
+# 父仓库全局忽略 data/；指纹库必须入库
+!app/data/
+!app/data/unified_bank.json
+
+# 运行日志
+data/**/logs/*.log
+
+# 依赖 / 系统文件
+node_modules/
+.DS_Store
+Thumbs.db

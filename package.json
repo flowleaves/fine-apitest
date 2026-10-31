@@ -1,0 +1,20 @@
+{
+  "name": "fine-apitest",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "模型中转站三项能力测试 Agent Skill：糖果、指纹、水豚海滩 HTML，附本地只读结果页",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/unit.test.mjs tests/e2e.test.mjs tests/web.test.mjs",
+    "test:unit": "node --test tests/unit.test.mjs",
+    "test:e2e": "node --test tests/e2e.test.mjs",
+    "test:web": "node --test tests/web.test.mjs",
+    "run": "node app/run.mjs",
+    "review": "node app/review.mjs",
+    "serve": "node app/serve.mjs",
+    "mock": "node tests/mock-upstream.mjs"
+  }
+}
