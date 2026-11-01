@@ -32,7 +32,7 @@ export function chatCompletionsUrl(baseUrl) {
   return `${String(baseUrl).replace(/\/+$/, '')}/chat/completions`;
 }
 
-export function buildBody({ model, prompt, systemPrompt = null, maxTokens = 4096, stream = true }) {
+export function buildBody({ model, prompt, systemPrompt = null, maxTokens = 16384, stream = true }) {
   const messages = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
   messages.push({ role: 'user', content: prompt });
@@ -287,7 +287,7 @@ export async function runChatOnce({
   model,
   prompt,
   systemPrompt = null,
-  maxTokens = 4096,
+  maxTokens = 16384,
   timeouts = DEFAULT_TIMEOUTS,
   externalSignal = null,
   attempt = 1,

@@ -38,7 +38,7 @@ export const TESTS = [
     kind: 'candy',
     prompt: CANDY_BAG_V1_PROMPT,
     requests: 1,
-    maxTokens: 4096,
+    maxTokens: 16384,
   },
   {
     id: 'fingerprint',
@@ -46,7 +46,7 @@ export const TESTS = [
     kind: 'fingerprint',
     prompt: null,
     requests: 3,
-    maxTokens: 4096,
+    maxTokens: 16384,
   },
   {
     id: 'capybara-html',
@@ -56,7 +56,7 @@ export const TESTS = [
     fileName: 'capybara.html',
     prompt: CAPYBARA_HTML_PROMPT,
     requests: 1,
-    maxTokens: 8192,
+    maxTokens: 16384,
   },
 ];
 

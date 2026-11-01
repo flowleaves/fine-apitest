@@ -95,7 +95,7 @@ function helpText() {
   --model <id[,id]>       只测指定模型；可重复，也可逗号分隔
   --concurrency <n>       并发数；默认 0 = 全并发
   --retry <n>             每个请求失败重试次数；默认 1
-  --max-tokens <n>        覆盖所有测试的 max_tokens；默认按测试（糖果/指纹 4096，水豚 HTML 8192）
+  --max-tokens <n>        覆盖所有测试的 max_tokens；默认 16384
   --timeout-connect <ms>  连接超时；默认 ${DEFAULT_TIMEOUTS.connect}
   --timeout-first <ms>    首内容超时；默认 ${DEFAULT_TIMEOUTS.first}
   --timeout-gap <ms>      内容间隔超时；默认 ${DEFAULT_TIMEOUTS.gap}
@@ -248,7 +248,7 @@ async function main() {
   };
   const retry = args.noRetry ? 0 : numberArg(args.retry, 1);
   const concurrency = numberArg(args.concurrency, 0);
-  const maxTokens = args.maxTokens === undefined ? null : numberArg(args.maxTokens, 4096);
+  const maxTokens = args.maxTokens === undefined ? null : numberArg(args.maxTokens, 16384);
 
   const result = await executeRun({
     station,

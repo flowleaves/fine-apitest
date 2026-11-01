@@ -3,7 +3,7 @@
 ```
 app/
 ├─ run.mjs                  # CLI 主入口
-├─ review.mjs               # 追加 artifact 视觉复核
+├─ review.mjs               # 按用户要求追加 artifact 视觉复核
 ├─ serve.mjs                # 本地只读结果页服务
 ├─ web/                     # 结果页（index.html / style.css / app.js）
 ├─ data/unified_bank.json   # 指纹库（18 个模型，约 1MB）

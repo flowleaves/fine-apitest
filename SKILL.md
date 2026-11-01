@@ -1,15 +1,15 @@
 ---
 name: fine-apitest
-description: Test an OpenAI-compatible model relay station with three capability tests (candy reasoning, model fingerprint, capybara beach HTML animation), archive raw results, and optionally visually review the HTML artifact. Use when the user provides a station name, base URL, and API key and asks to test a relay station or compare its models.
+description: Test an OpenAI-compatible model relay station with three capability tests (candy reasoning, model fingerprint, capybara beach HTML animation), archive raw results, and check basic HTML structure. Visual/aesthetic evaluation is left to the user. Use when the user provides a station name, base URL, and API key and asks to test a relay station or compare selected models.
 ---
 
 # fine-apitest
 
-用本地零依赖 CLI 测试模型中转站。用户给出 **站点名称 + Base URL + API Key** 后，你负责跑完三项测试、复核 HTML、如实汇报。
+用本地零依赖 CLI 测试模型中转站。用户给出 **站点名称 + Base URL + API Key** 后，先列出模型让用户选择，再跑三项测试、交付 HTML 给用户评测、如实汇报。
 
 ## 项目阶段（默认运行期）
 
-设计已经冻结。默认只做四件事：**运行测试、写报告、视觉复核、浏览只读结果页**。
+设计已经冻结。默认只做四件事：**运行测试、写报告、交付 HTML 给用户评测、浏览只读结果页**。
 
 除非用户明确说「修改项目 / 改题目 / 改判分 / 改代码」，否则不要改：
 
@@ -53,21 +53,27 @@ description: Test an OpenAI-compatible model relay station with three capability
 node app/run.mjs --list-models --station "<站点>" --url "<URL>" --key "<KEY>"
 ```
 
+**模型选择规则：**
+
+- 用户指定了模型 → 直接测指定模型；
+- 用户没有指定模型 → 先列出模型，把列表给用户选择，**不要直接跑全部**；
+- 只有用户明确说「全部模型」时才全量运行。
+
 ### 2. 跑测试
 
-默认自动发现全部模型、全并发、失败重试 1 次：
+对用户选定的模型运行三项测试（全并发、失败重试 1 次）：
 
 ```bash
-node app/run.mjs --station "<站点>" --group "<分组>" --url "<URL>" --key "<KEY>" --json
+node app/run.mjs --station "<站点>" --group "<分组>" --url "<URL>" --key "<KEY>" --model "<模型>" --json
 ```
 
-省时/省钱时加 `--model <id>`（可逗号分隔）。stdout 是 JSON；退出码 0 只代表「运行完成」，不代表全部通过；必须看 `totals` 和 `results[].overall`。
+多个模型可用逗号分隔或重复 `--model`。stdout 是 JSON；退出码 0 只代表「运行完成」，不代表全部通过；必须看 `totals` 和 `results[].overall`。
 
 三项测试固定为：
 
 1. 糖果测试（自动判分）
 2. 模型指纹检测（3 次挑战）
-3. 水豚 · 海滩骑行 HTML（结构检查 + 视觉复核）
+3. 水豚 · 海滩骑行 HTML（只做基础结构检查，视觉评测交给用户）
 
 ### 3. 读结果
 
@@ -82,7 +88,7 @@ node app/run.mjs --station "<站点>" --group "<分组>" --url "<URL>" --key "<K
 - 通过 / 待复核 / 不通过；
 - 每个模型的三项结论；
 - 失败分类与可执行建议；
-- 哪些 HTML 仍需视觉复核。
+- HTML 结构是否通过；视觉效果请用户自行评测。
 
 不要把「待复核」说成「通过」。
 
@@ -94,38 +100,35 @@ node app/serve.mjs --open
 
 默认 `http://127.0.0.1:8788/`，按站点/分组展示，模型和三项测试可折叠，水豚 HTML 可在 sandbox iframe 中预览/全屏。页面只读，不会修改结果。
 
-### 5. 视觉复核 HTML
+### 5. 交付 HTML 给用户评测
 
-对 `summary.md` 的「待 Agent 视觉复核」列表，打开 `.html`，检查：
+默认只做基础结构检查，不做审美评测：
 
-1. 是否明显是水豚（大脸、小耳、钝鼻），并戴着墨镜；
-2. 自行车是否有两轮、车架、车把、车座、曲柄、脚踏板、辐条；
-3. 是否真的在海滩上：沙滩、海浪、天空/阳光、夏日氛围；
-4. 速度滑块是否覆盖 0.3×–3.0×，拖动时车轮/踏板/背景是否实时平滑变化；
-5. 暂停/继续按钮是否有效，恢复后动画是否连续；
-6. 左上角是否有风格化的「星芽」艺术字；
-7. 桌面与窄屏是否都能正常显示，动画是否连续同步。
+1. 读取 `summary.md` / `run.json` 中 `capybara-html` 的 `status`、`verdict`、`checks`；
+2. 确认硬性结构项（标签、内联 SVG、动画、滑块 0.3×–3.0×、暂停/继续、星芽、无外链、未截断）；
+3. 把 artifact 路径或结果页链接交给用户，说明「结构通过，视觉效果请自行评测」；
+4. HTML 未由用户给出结论时，总评保持 `review`，不要自行改成 `pass`。
 
-然后：
+**不要**主动打开 HTML 做构图、美观、动画流畅度评分，也**不要**自行调用 `review.mjs`。
+
+如果用户明确要求视觉复核，才按 README 的检查清单检查并调用：
 
 ```bash
-node app/review.mjs --run "<runDir>" --model "<模型>" --test capybara-html --verdict pass --note "水豚/墨镜/海滩清晰，滑块 0.3–3.0 实时生效，暂停恢复连续，星芽艺术字与移动端布局正常"
+node app/review.mjs --run "<runDir>" --model "<模型>" --test capybara-html --verdict pass|fail|review --note "<具体依据>"
 ```
 
 `--test` 可用 `capybara-html`（也接受 `capybara` / `html`）；`--verdict` 为 `pass` / `fail` / `review`。备注必须写具体依据，不要只写「不错」。
 
-没有浏览器能力时，明确说「HTML 仍需人工视觉复核」，不要假装已看。
-
 ### 6. 最终汇报
 
-复核后重新读 `summary.md` 或 `run.json` 的 `overall`，再给最终结论。建议格式：
+直接按 `summary.md` / `run.json` 的 `overall` 汇报，不要自行改总评。建议格式：
 
 ```
 站点：<站>/<组> · 模型 6 个 · 请求 30（29 成功 / 1 失败）
 通过 4 · 待复核 1 · 不通过 1
-- model-a：通过（糖果正确；指纹最像 claude-opus-5-5；水豚 HTML 复核通过）
+- model-a：通过（糖果正确；指纹最像 claude-opus-5-5；水豚 HTML 结构通过，视觉待用户评测）
 - model-b：不通过（糖果错误）
-- model-c：待复核（水豚 HTML 未视觉复核）
+- model-c：待复核（水豚 HTML 结构通过，视觉待用户评测）
 报告：<summaryPath>
 ```
 
@@ -159,6 +162,7 @@ node app/review.mjs --run "<runDir>" --model "<模型>" --test capybara-html --v
 - 不删除历史运行目录；需要重跑就新建运行。
 - 不伪造结果；失败就写失败。
 - 设计冻结后，不擅自修改项目内容。
+- 未指定模型时先让用户选；HTML 默认只做结构检查，审美评测交给用户。
 - 结果页只读；不要为让它显示结果而改写 `data/` 或添加写接口。
 
 ## 参考
@@ -167,7 +171,7 @@ node app/review.mjs --run "<runDir>" --model "<模型>" --test capybara-html --v
 - `PROJECT-PLAN.md`：项目阶段、范围与变更控制。
 - `agent.md`：项目规范与修改约束。
 - `app/run.mjs`：主入口。
-- `app/review.mjs`：视觉复核入口。
+- `app/review.mjs`：用户明确要求视觉复核时使用。
 - `app/serve.mjs` + `app/web/`：本地只读结果页。
 
 ## 安装

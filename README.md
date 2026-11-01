@@ -1,13 +1,13 @@
 # fine-apitest · 模型中转站三项能力测试
 
-给 Agent 用的本地测试工具：只要告诉它 **站点名称、Base URL、API Key**，它就会自动发现模型、跑完三项测试、归档原始结果，并生成可读报告。
+给 Agent 用的本地测试工具：告诉它 **站点名称、Base URL、API Key**，它会先列出可用模型，由你选定后再跑三项测试、归档原始结果，并生成可读报告。
 
 > 零依赖、零构建、纯 Node ESM。复制目录即可用，不需要 `npm install`。
 
 ## 项目阶段与变更控制
 
 - **设计期（当前已完成）**：可以调整测试题目、判分规则、报告格式和目录结构。
-- **运行期（默认）**：设计冻结后，Agent **只运行测试、写报告、做视觉复核、浏览只读结果页**；除非用户明确要求「修改项目」，否则不改题目、代码、数据结构或报告规则。
+- **运行期（默认）**：设计冻结后，Agent **只运行测试、写报告、浏览只读结果页**；HTML 只做基础结构检查，视觉/审美评测交给用户。除非用户明确要求「修改项目」，否则不改题目、代码、数据结构或报告规则。
 - 任何题目 / 判分 / 数据契约变更，都必须由用户明确提出，并同步更新 `PROJECT-PLAN.md`、`agent.md` 和 `README.md`。
 
 详见 `PROJECT-PLAN.md` 与 `agent.md` 的「项目阶段与变更控制」。
@@ -18,7 +18,7 @@
 |---|---|---|
 | 糖果测试 | 经典「黑袋糖果」组合题 | 自动判分：正确 / 错误 / 待复核 |
 | 模型指纹检测 | 3 组 1–355 无语义数字选择，和指纹库比对 | 输出最可能模型与家族概率；证据不足记待复核 |
-| 水豚 · 海滩骑行 HTML | 单文件 HTML：戴墨镜的水豚在海滩骑自行车，带速度滑块、暂停/继续、左上角「星芽」艺术字 | 结构检查 + Agent 视觉复核 |
+| 水豚 · 海滩骑行 HTML | 单文件 HTML：戴墨镜的水豚在海滩骑自行车，带速度滑块、暂停/继续、左上角「星芽」艺术字 | 只做基础结构检查；视觉评测交给用户 |
 
 指纹结论只表示「数字分布最像哪个模型」，**不构成模型真假判定**。
 
@@ -35,7 +35,7 @@ fine-apitest/
 ├─ 测试记录.md              # 每次运行的索引（CLI 自动维护）
 ├─ app/
 │  ├─ run.mjs               # 主入口：跑测试
-│  ├─ review.mjs            # 追加 HTML 视觉复核结论
+│  ├─ review.mjs            # 按用户要求追加 HTML 视觉复核
 │  ├─ serve.mjs             # 本地只读结果页服务
 │  ├─ web/                  # 结果页（零构建 HTML/CSS/JS）
 │  ├─ lib/                  # 传输、SSE、判分、指纹、报告、归档
@@ -91,8 +91,15 @@ ln -s "$PWD/fine-apitest" ~/.claude/skills/fine-apitest
 
 ```bash
 cd fine-apitest
-node app/run.mjs --station "凉热葵" --group "claude-kiro-0075" --url "https://api.liangrekui.com/v1" --key "sk-..."
+
+# 1. 先看有哪些模型
+node app/run.mjs --list-models --station "凉热葵" --group "claude-kiro-0075" --url "https://api.liangrekui.com/v1" --key "sk-..."
+
+# 2. 选定模型后运行
+node app/run.mjs --station "凉热葵" --group "claude-kiro-0075" --url "https://api.liangrekui.com/v1" --key "sk-..." --model "claude-opus-5-5"
 ```
+
+> Agent 默认流程：用户没指定模型时先列出模型让用户选择，不直接全量运行。只有用户明确要求「全部模型」时才省略 `--model`。
 
 运行结束后：
 
@@ -104,13 +111,13 @@ node app/run.mjs --station "凉热葵" --group "claude-kiro-0075" --url "https:/
 密钥会保存到 `data/keys.json`，下次可省略 `--key`：
 
 ```bash
-node app/run.mjs --station "凉热葵" --group "claude-kiro-0075" --url "https://api.liangrekui.com/v1"
+node app/run.mjs --station "凉热葵" --group "claude-kiro-0075" --url "https://api.liangrekui.com/v1" --model "claude-opus-5-5"
 ```
 
 不想保存：
 
 ```bash
-node app/run.mjs --station "凉热葵" --url "https://api.liangrekui.com/v1" --key "sk-..." --no-save-key
+node app/run.mjs --station "凉热葵" --url "https://api.liangrekui.com/v1" --key "sk-..." --model "claude-opus-5-5" --no-save-key
 ```
 
 ### 查看结果页
@@ -136,7 +143,7 @@ node app/run.mjs --station "站点" --url "https://api.example.com/v1" --model c
 node app/run.mjs --station "站点" --url "https://api.example.com/v1" --model claude-opus-5-5,claude-sonnet-5
 ```
 
-默认会自动 `GET /v1/models`，测试全部模型。默认全并发；模型很多（例如 20+）时建议加 `--concurrency 8`，避免触发站方限流。
+CLI 未指定 `--model` 时会 `GET /v1/models` 并测试全部模型；**Agent 流程应先列出模型让用户选择**，只有用户明确要求全量时才全量运行。默认全并发；模型很多（例如 20+）时建议加 `--concurrency 8`，避免触发站方限流。
 
 ### 先看有哪些模型
 
@@ -161,10 +168,10 @@ node app/run.mjs --forget-key --station "站点" --group "默认"
 | `--key` | API Key | — |
 | `--key-env` | 从环境变量读取 Key | — |
 | `--key-file` | 从文件读取 Key | — |
-| `--model` | 只测指定模型，可重复/逗号分隔 | 自动发现全部 |
+| `--model` | 只测指定模型，可重复/逗号分隔 | 未指定时测试全部（Agent 流程应先让用户选） |
 | `--concurrency` | 并发数 | `0` = 全并发 |
 | `--retry` | 每个请求失败重试次数 | `1` |
-| `--max-tokens` | 覆盖所有测试的 `max_tokens` | 糖果/指纹 `4096`，水豚 HTML `8192` |
+| `--max-tokens` | 覆盖所有测试的 `max_tokens` | `16384` |
 | `--timeout-connect` | 连接超时 | `15000` |
 | `--timeout-first` | 首内容超时 | `300000` |
 | `--timeout-gap` | 内容间隔超时 | `120000` |
@@ -187,20 +194,29 @@ node app/run.mjs --forget-key --station "站点" --group "默认"
 - **水豚 HTML**：
   - 结构硬检查：完整标签、无外链、内嵌 SVG、动画、速度滑块覆盖 `0.3×–3.0×`、暂停/继续按钮、`星芽`、vanilla JS；
   - 轻微警告：缺 viewport、未检测到事件绑定、体积偏小；
-  - 视觉复核：Agent 打开 HTML，检查水豚/墨镜/自行车/海滩/海浪、滑块实时调速、暂停/继续、左上角「星芽」、移动端布局、动画同步；
-  - 结论：`ok` / `review` / `fail`。
+  - 默认只做结构检查，不做审美/视觉评分；结构通过后把预览/全屏交给用户评测；
+  - 结论：`ok`（结构通过，待用户评测）/ `review` / `fail`。
 
 ### 总评
 
-- 任意硬失败 → **不通过**（请求失败、糖果错误、HTML 结构不合格、视觉复核不通过）；
-- 否则有未完成项 → **待复核**（HTML 未做视觉复核、指纹证据不足、指纹部分样本失败、糖果待复核）；
-- 三项全部完成且通过 → **通过**。
+- 任意硬失败 → **不通过**（请求失败、糖果错误、HTML 结构不合格）；
+- 否则有未完成项 → **待复核**（HTML 结构通过但用户尚未评测、指纹证据不足、指纹部分样本失败、糖果待复核）；
+- 三项全部完成且用户确认 HTML 通过 → **通过**。
 
-视觉复核通过可以覆盖「缺 viewport / 未检测到事件绑定 / 体积偏小」这类轻微结构警告，但**不能覆盖**无产物、外链、截断、缺滑块/暂停/星芽等硬失败。
+只有用户明确要求视觉复核并给出结论时，`review.mjs` 的 `pass` 才可覆盖「缺 viewport / 未检测到事件绑定 / 体积偏小」这类轻微结构警告，但**不能覆盖**无产物、外链、截断、缺滑块/暂停/星芽等硬失败。
 
-## Agent 视觉复核
+## HTML 交付与用户评测
 
-跑完后，`summary.md` 会列出「待 Agent 视觉复核」的 HTML。Agent 打开 `.html`，检查：
+默认流程：
+
+1. Agent 只确认 `capybara-html` 的结构检查结果（`checks` / `verdict`）；
+2. 把 artifact 路径或结果页链接交给用户；
+3. 由用户看预览/全屏，判断水豚、自行车、海滩、动画、构图等视觉效果；
+4. HTML 未由用户给出结论时，总评保持 `待复核`。
+
+Agent **不主动**做审美、构图、动画流畅度评分，也**不自行**调用 `review.mjs`。
+
+如果用户明确要求视觉复核，可参考以下清单：
 
 1. 是否明显是水豚（大脸、小耳、钝鼻），并戴着墨镜；
 2. 自行车是否有两轮、车架、车把、车座、曲柄、脚踏板、辐条；
@@ -271,7 +287,7 @@ npm run mock
 ## 已知边界
 
 - 只实现 OpenAI Chat Completions（`/v1/chat/completions`），未实现 Responses / Anthropic / Gemini 原生协议。
-- 水豚 HTML 默认 `max_tokens=8192`；仍可能被上游截断，看到 `truncated` 时可用 `--max-tokens 12288` 重试。
+- 三项测试默认 `max_tokens=16384`；仍可能被上游截断，看到 `truncated` 时可用 `--max-tokens 32768` 重试。
 - 指纹库包含 18 个模型，超出库范围的模型只能给「最像」结果，不能证明真假。
 - 无管理型 Web UI；提供本地只读结果页。无定时任务、无跨运行趋势；这些是后续扩展。
 - 不做 DNS 固定；这是本地可信 CLI，不是多租户服务端。若要公网部署，需补 SSRF 防护与认证。
