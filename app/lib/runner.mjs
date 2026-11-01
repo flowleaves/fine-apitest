@@ -49,16 +49,19 @@ function aggregateMetrics(items) {
   const metrics = items.map((item) => item.result.timings).filter(Boolean);
   if (!metrics.length) return null;
   const sum = (key) => metrics.reduce((total, item) => total + (Number(item[key]) || 0), 0);
-  const min = (key) => {
+  const avg = (key) => {
     const values = metrics.map((item) => Number(item[key])).filter((value) => Number.isFinite(value));
-    return values.length ? Math.min(...values) : null;
+    return values.length ? values.reduce((total, value) => total + value, 0) / values.length : null;
   };
+  const okItems = items.filter((item) => item.result.ok && item.result.content?.trim());
+  const generationMs = okItems.reduce((total, item) => total + (Number(item.result.timings?.generationMs) || 0), 0);
+  const output = okItems.reduce((total, item) => total + (Number(item.result.usage?.output) || 0), 0);
   return {
     totalMs: sum('totalMs'),
-    headersMs: min('headersMs'),
-    firstContentMs: min('firstContentMs'),
-    generationMs: sum('generationMs'),
-    speedTps: null,
+    headersMs: avg('headersMs'),
+    firstContentMs: avg('firstContentMs'),
+    generationMs,
+    speedTps: output > 0 && generationMs > 0 ? output / (generationMs / 1000) : null,
     speedCps: null,
     nonStream: metrics.every((item) => item.nonStream),
   };
@@ -97,7 +100,7 @@ function buildCommon(test, item) {
     attemptDetails: attemptDetails(result),
     requestFile: item.requestFile || null,
     rawFiles: item.rawFiles || [],
-    maxTokens: item.task?.maxTokens ?? test.maxTokens,
+    maxTokens: item.task?.maxTokens ?? test.maxTokens ?? null,
   };
 }
 
@@ -173,7 +176,7 @@ function buildArtifact(test, item, runDir, modelDir) {
   }
   const evaluation = evaluateArtifact(item.result.content, test.artifact, {
     finishReason: item.result.finishReason,
-    maxTokens: item.task?.maxTokens ?? test.maxTokens,
+    maxTokens: item.task?.maxTokens ?? test.maxTokens ?? null,
   });
   let artifactFile = null;
   if (evaluation.artifact) {
@@ -269,7 +272,7 @@ export async function executeRun(options) {
             prompt: challenge.prompt,
             systemPrompt: challenge.system || null,
             challenge,
-            maxTokens: options.maxTokens ?? test.maxTokens,
+            maxTokens: options.maxTokens ?? test.maxTokens ?? null,
           });
         });
       } else {
@@ -280,7 +283,7 @@ export async function executeRun(options) {
           prompt: test.prompt,
           systemPrompt: null,
           challenge: null,
-          maxTokens: options.maxTokens ?? test.maxTokens,
+          maxTokens: options.maxTokens ?? test.maxTokens ?? null,
         });
       }
     }

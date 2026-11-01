@@ -368,6 +368,8 @@ function renderCommon(test) {
   const rows = [
     ['请求状态', test.status === 'succeeded' ? '成功' : '失败'],
     ['HTTP', test.httpStatus ?? '—'],
+    ['首字', fmtDuration(test.metrics?.firstContentMs)],
+    ['输出 token/s', fmtSpeed(test.metrics?.speedTps)],
     ['耗时', fmtDuration(test.metrics?.totalMs)],
     ['尝试次数', test.attempts ?? 1],
     ['finish_reason', test.finishReason ?? '—'],
@@ -810,6 +812,12 @@ function fmtDuration(ms) {
   if (value < 1000) return `${Math.round(value)}ms`;
   if (value < 60_000) return `${(value / 1000).toFixed(1)}s`;
   return `${Math.floor(value / 60_000)}m${Math.round((value % 60_000) / 1000)}s`;
+}
+
+function fmtSpeed(tps) {
+  const value = Number(tps);
+  if (!Number.isFinite(value) || value <= 0) return '—';
+  return `${value.toFixed(1)} t/s`;
 }
 
 function fmtPercent(value) {

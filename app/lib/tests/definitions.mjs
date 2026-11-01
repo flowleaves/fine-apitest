@@ -3,6 +3,8 @@
  *
  * 变更记录：
  * - 2026-11-01：移除「鹈鹕 · SVG」「鹈鹕 · HTML 动画」，新增「水豚 · 海滩骑行 HTML」。
+ * - 2026-11-02：三项测试默认不再设置 max_tokens，输出上限交给上游；需要限制时用 --max-tokens。
+ * - 2026-11-02：水豚 HTML 提示词改为简体中文版，简化要求，避免不必要的复杂性。
  *
  * 设计完成后进入运行期：除非用户明确要求修改项目，否则只运行测试、写报告，
  * 不再改动题目、判分、数据结构或代码。
@@ -15,21 +17,15 @@ export const CANDY_BAG_V1_PROMPT = `在一个黑色的袋子里放有三种口�
 
 export const CANDY_REFERENCE = '21';
 
-export const CAPYBARA_HTML_PROMPT = `Create a self-contained HTML animation featuring a cool capybara wearing sunglasses and riding a bicycle along a sunny beach. Use a beautiful, polished cartoon-style SVG illustration with ocean waves, golden sand, and a relaxing summer atmosphere.
+export const CAPYBARA_HTML_PROMPT = `制作一个独立的HTML动画，展示一只戴着太阳镜、在阳光明媚的海滩骑自行车的水豚。用可爱、色彩丰富的SVG卡通风格，搭配沙滩和海浪。
 
-Add a speed control slider (0.3×–3.0×) that smoothly adjusts the bicycle's movement, wheel rotation, and pedaling animation in real time. Include a pause/resume button.
+添加速度滑块（0.3×–3.0×）用于控制循环和方向盘旋转，并加一个暂停/继续按钮。
 
-Place the Chinese text **「星芽」** in elegant artistic typography at the top-left corner of the screen. Make it visually distinctive and stylish.
+将艺术中文文字“星芽”置于左上角。
 
-Requirements:
-- Smooth, continuous animation with synchronized movements.
-- Responsive layout for desktop and mobile.
-- Beautiful colors, detailed illustrations, and polished UI.
-- Use inline SVG, CSS, and vanilla JavaScript only.
-- No external libraries, images, or dependencies.
-- Deliver a complete, standalone HTML file that runs directly in a browser.
+只使用内联SVG、CSS和原版JavaScript。保持动画流畅，设计美观，布局响应灵敏。没有外部依赖。
 
-Return only the complete HTML source code.`;
+只输出完整的HTML代码。实现简单，避免不必要的复杂性。`;
 
 export const TESTS = [
   {
@@ -38,7 +34,6 @@ export const TESTS = [
     kind: 'candy',
     prompt: CANDY_BAG_V1_PROMPT,
     requests: 1,
-    maxTokens: 16384,
   },
   {
     id: 'fingerprint',
@@ -46,7 +41,6 @@ export const TESTS = [
     kind: 'fingerprint',
     prompt: null,
     requests: 3,
-    maxTokens: 16384,
   },
   {
     id: 'capybara-html',
@@ -56,7 +50,6 @@ export const TESTS = [
     fileName: 'capybara.html',
     prompt: CAPYBARA_HTML_PROMPT,
     requests: 1,
-    maxTokens: 16384,
   },
 ];
 

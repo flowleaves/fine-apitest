@@ -82,6 +82,10 @@ test('结果页：静态页 + 运行/HTML/报告只读 API', async () => {
     assert.equal(page.status, 200);
     assert.match(await page.text(), /星芽/);
 
+    const appJs = await fetch(`${base}/app.js`);
+    assert.equal(appJs.status, 200);
+    assert.match(await appJs.text(), /输出 token\/s/);
+
     const runs = await getJson(`${base}/api/runs`);
     assert.equal(runs.status, 200);
     assert.equal(runs.body.ok, true);
@@ -93,7 +97,11 @@ test('结果页：静态页 + 运行/HTML/报告只读 API', async () => {
     assert.equal(detail.status, 200);
     assert.equal(detail.body.ok, true);
     assert.equal(detail.body.run.results.length, 1);
-    assert.equal(detail.body.run.results[0].tests['capybara-html'].verdict, 'ok');
+    const capybara = detail.body.run.results[0].tests['capybara-html'];
+    assert.equal(capybara.verdict, 'ok');
+    assert.ok(Number.isFinite(capybara.metrics?.firstContentMs));
+    assert.ok(capybara.metrics && 'speedTps' in capybara.metrics);
+    assert.ok(capybara.metrics.speedTps == null || capybara.metrics.speedTps > 0);
 
     const artifact = await fetch(`${base}/api/artifact?run=${encodeURIComponent(runId)}&model=mock-good`);
     assert.equal(artifact.status, 200);
@@ -109,7 +117,10 @@ test('结果页：静态页 + 运行/HTML/报告只读 API', async () => {
 
     const report = await fetch(`${base}/api/report?run=${encodeURIComponent(runId)}`);
     assert.equal(report.status, 200);
-    assert.match(await report.text(), /测试报告/);
+    const reportText = await report.text();
+    assert.match(reportText, /测试报告/);
+    assert.match(reportText, /首字/);
+    assert.match(reportText, /输出 token\/s/);
 
     const missingRun = await getJson(`${base}/api/run?run=nope`);
     assert.equal(missingRun.status, 404);

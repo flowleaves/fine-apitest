@@ -32,7 +32,7 @@ export function chatCompletionsUrl(baseUrl) {
   return `${String(baseUrl).replace(/\/+$/, '')}/chat/completions`;
 }
 
-export function buildBody({ model, prompt, systemPrompt = null, maxTokens = 16384, stream = true }) {
+export function buildBody({ model, prompt, systemPrompt = null, maxTokens = null, stream = true }) {
   const messages = [];
   if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
   messages.push({ role: 'user', content: prompt });
@@ -42,7 +42,8 @@ export function buildBody({ model, prompt, systemPrompt = null, maxTokens = 1638
     stream,
   };
   if (stream) body.stream_options = { include_usage: true };
-  body.max_tokens = maxTokens;
+  // 默认不发送 max_tokens：输出上限交给上游；只有显式指定时才加限制。
+  if (Number.isFinite(maxTokens) && maxTokens > 0) body.max_tokens = maxTokens;
   return body;
 }
 
@@ -287,7 +288,7 @@ export async function runChatOnce({
   model,
   prompt,
   systemPrompt = null,
-  maxTokens = 16384,
+  maxTokens = null,
   timeouts = DEFAULT_TIMEOUTS,
   externalSignal = null,
   attempt = 1,

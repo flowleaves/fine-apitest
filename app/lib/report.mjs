@@ -35,6 +35,12 @@ function fmtTime(iso) {
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())} ${p(date.getHours())}:${p(date.getMinutes())}:${p(date.getSeconds())}`;
 }
 
+function fmtSpeed(tps) {
+  const value = Number(tps);
+  if (!Number.isFinite(value) || value <= 0) return '—';
+  return `${value.toFixed(1)} t/s`;
+}
+
 function reviewSuffix(test) {
   if (!test.review) return '';
   const labelText = test.review.verdict === 'pass' ? '人工通过' : test.review.verdict === 'fail' ? '人工不通过' : '人工待定';
@@ -167,14 +173,16 @@ function renderTestTable(result) {
     ['fingerprint', '模型指纹检测'],
     ['capybara-html', '水豚 · 海滩骑行 HTML'],
   ];
-  const lines = ['| 测试 | 请求 | 结论 | 耗时 | 说明 |', '|---|---:|---|---:|---|'];
+  const lines = ['| 测试 | 请求 | 结论 | 首字 | 输出 token/s | 耗时 | 说明 |', '|---|---:|---|---:|---:|---:|---|'];
   for (const [id, name] of rows) {
     const test = result.tests?.[id];
     const status = test?.status ? label(STATUS, test.status) : '—';
+    const firstContent = test?.metrics?.firstContentMs != null ? formatDuration(test.metrics.firstContentMs) : '—';
+    const speed = fmtSpeed(test?.metrics?.speedTps);
     const duration = test?.metrics?.totalMs != null ? formatDuration(test.metrics.totalMs) : '—';
     const warnings = (test?.warnings || []).filter((warning) => warning !== 'non_stream');
     const note = `${testNote(test)}${warnings.length ? `；警告：${warnings.join('、')}` : ''}`;
-    lines.push(`| ${name} | ${status} | ${escapeMd(conclusion(test))} | ${duration} | ${escapeMd(note)} |`);
+    lines.push(`| ${name} | ${status} | ${escapeMd(conclusion(test))} | ${firstContent} | ${speed} | ${duration} | ${escapeMd(note)} |`);
   }
   return lines.join('\n');
 }

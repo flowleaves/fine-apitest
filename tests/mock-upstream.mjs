@@ -158,7 +158,7 @@ function answerFor(model, prompt) {
   if (prompt.includes('For each of 218 positions')) return fingerprintNumbers(218);
   if (prompt.includes('Provide exactly 233 whole-number')) return fingerprintNumbers(233);
   if (prompt.includes('Fill exactly 247 positions')) return fingerprintNumbers(247);
-  if (/capybara/i.test(prompt)) {
+  if (/capybara|水豚/i.test(prompt)) {
     return model === 'mock-bad' ? '抱歉，无法生成这个 HTML。' : `\`\`\`html\n${CAPYBARA_HTML}\n\`\`\``;
   }
   return 'ok';

@@ -10,9 +10,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { SseDecoder } from '../app/lib/sse.mjs';
-import { runChatOnce } from '../app/lib/chat.mjs';
+import { buildBody, runChatOnce } from '../app/lib/chat.mjs';
 import { redact } from '../app/lib/log.mjs';
 import { gradeCandy } from '../app/lib/tests/candy.mjs';
+import { TESTS } from '../app/lib/tests/definitions.mjs';
 import { evaluateArtifact } from '../app/lib/tests/artifact.mjs';
 import { analyzeFingerprint, firstChallenges, loadBank, parseNumbers } from '../app/lib/tests/fingerprint.mjs';
 import { classifyAddress, normalizeBaseUrl } from '../app/lib/netguard.mjs';
@@ -71,6 +72,22 @@ describe('Chat 传输', () => {
     } finally {
       await new Promise((resolve) => server.close(resolve));
     }
+  });
+});
+
+describe('Chat 请求体', () => {
+  it('默认不发送 max_tokens，输出上限交给上游', () => {
+    const body = buildBody({ model: 'mock', prompt: 'hi', stream: false });
+    assert.equal('max_tokens' in body, false);
+  });
+
+  it('显式 maxTokens 时才发送 max_tokens', () => {
+    const body = buildBody({ model: 'mock', prompt: 'hi', stream: false, maxTokens: 4096 });
+    assert.equal(body.max_tokens, 4096);
+  });
+
+  it('三项测试定义不设置默认 maxTokens', () => {
+    for (const test of TESTS) assert.equal(test.maxTokens, undefined);
   });
 });
 
@@ -282,9 +299,9 @@ describe('报告与索引', () => {
       model: 'mock-model',
       overall: { verdict: 'pass', reasons: ['三项测试均通过'] },
       tests: {
-        candy: { name: '糖果测试', kind: 'candy', status: 'succeeded', verdict: 'correct', grade: { extracted: '21', reference: '21', reason: 'matched' }, answer: '答案：21', metrics: { totalMs: 100 } },
-        fingerprint: { name: '模型指纹检测', kind: 'fingerprint', status: 'succeeded', verdict: 'predicted', result: { prediction: 'x', prediction_name: 'x', probability: 0.9, family_prediction: 'f', family_prediction_name: 'F', family_probability: 0.9, used_outputs: 3, results: [] }, samples: [], metrics: { totalMs: 200 } },
-        'capybara-html': { name: '水豚 · 海滩骑行 HTML', kind: 'artifact', status: 'succeeded', verdict: 'ok', artifactFile: 'artifacts/x/capybara.html', bytes: 4000, lines: 80, checks: [], review: { verdict: 'pass', reviewer: 'agent', reviewedAt: '2026-01-01T00:00:30.000Z' }, metrics: { totalMs: 400 } },
+        candy: { name: '糖果测试', kind: 'candy', status: 'succeeded', verdict: 'correct', grade: { extracted: '21', reference: '21', reason: 'matched' }, answer: '答案：21', metrics: { totalMs: 100, firstContentMs: 80, speedTps: 42.5 } },
+        fingerprint: { name: '模型指纹检测', kind: 'fingerprint', status: 'succeeded', verdict: 'predicted', result: { prediction: 'x', prediction_name: 'x', probability: 0.9, family_prediction: 'f', family_prediction_name: 'F', family_probability: 0.9, used_outputs: 3, results: [] }, samples: [], metrics: { totalMs: 200, firstContentMs: 90, speedTps: 30.2 } },
+        'capybara-html': { name: '水豚 · 海滩骑行 HTML', kind: 'artifact', status: 'succeeded', verdict: 'ok', artifactFile: 'artifacts/x/capybara.html', bytes: 4000, lines: 80, checks: [], review: { verdict: 'pass', reviewer: 'agent', reviewedAt: '2026-01-01T00:00:30.000Z' }, metrics: { totalMs: 400, firstContentMs: 120, speedTps: 18.4 } },
       },
     }],
   };
@@ -295,6 +312,9 @@ describe('报告与索引', () => {
     assert.match(text, /## 总览/);
     assert.match(text, /水豚 HTML/);
     assert.match(text, /mock-model/);
+    assert.match(text, /首字/);
+    assert.match(text, /输出 token\/s/);
+    assert.match(text, /42\.5 t\/s/);
     assert.doesNotMatch(text, /sk-secret/);
   });
 

@@ -103,6 +103,7 @@ node app/run.mjs --station "<站点>" --group "<分组>" --url "<BaseURL>" --key
 
 - 默认只测用户选定的模型；只有用户明确要求全量时才省略 `--model`。
 - 默认全并发、失败重试 1 次；不要擅自改成无限重试。
+- 默认不发送 `max_tokens`，输出上限交给上游；只有用户明确要求限制时才加 `--max-tokens <n>`。
 - 需要机器可读结果时加 `--json`；stdout 只有 JSON，进度在 stderr。
 - 退出码 0 表示「运行完成」，不代表所有模型通过；必须读 `totals` 与 `results[].overall`。
 
@@ -115,6 +116,7 @@ node app/run.mjs --station "<站点>" --group "<分组>" --url "<BaseURL>" --key
 - 模型数、请求成功/失败数；
 - 通过 / 待复核 / 不通过数量；
 - 每个模型的三项结论；
+- 每个测试的首字延迟与输出 token/s（如可用）；
 - 失败原因（鉴权、429、5xx、超时、参数拒绝等）；
 - HTML 结构是否通过；视觉评测交给用户。
 
@@ -163,7 +165,7 @@ node app/review.mjs --run "<runDir>" --model "<模型>" --test capybara-html --v
 
 ### 新增/修改测试
 
-1. 在 `app/lib/tests/definitions.mjs` 增加定义（id、name、kind、prompt、maxTokens、fileName）。
+1. 在 `app/lib/tests/definitions.mjs` 增加定义（id、name、kind、prompt、可选 maxTokens、fileName）。
 2. 在 `app/lib/tests/` 增加判分/检查模块。
 3. 在 `app/lib/runner.mjs` 增加任务构建与结果构建。
 4. 在 `app/lib/report.mjs` 增加报告段落。
